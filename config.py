@@ -35,7 +35,7 @@ class Config:
 
     # Gemini & Fact-Checking Providers (Free Tier APIs)
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash-lite")
+    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
     FACTCHECK_API_KEY = os.environ.get("FACTCHECK_API_KEY", "")
     TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
     FACTCHECK_MAX_CLAIMS = int(os.environ.get("FACTCHECK_MAX_CLAIMS", 12))

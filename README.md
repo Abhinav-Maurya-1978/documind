@@ -250,7 +250,7 @@ DocuMind features an **AI Fact Checker** (`/factcheck`) that verifies factual st
 | Variable | Default | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | `""` | Google Gemini API key for structured claim extraction and judging |
-| `GEMINI_MODEL` | `gemini-2.0-flash-lite` | High-throughput low-latency Gemini Flash-Lite model |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | High-throughput low-latency Gemini Flash-Lite model |
 | `LLM_PROVIDER` | `gemini` | LLM provider backend (`gemini` supported; `groq` stub available) |
 | `FACTCHECK_API_KEY` | `""` | Google Cloud API key for Fact Check Tools API |
 | `TAVILY_API_KEY` | `""` | Tavily Search API key (optional extra source) |

@@ -8,10 +8,17 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+def _sanitize_error(msg: str, key: str = "") -> str:
+    """Sanitizes sensitive tokens or query parameters from error strings."""
+    if key and key in msg:
+        msg = msg.replace(key, "[REDACTED]")
+    msg = re.sub(r'key=[a-zA-Z0-9_\-\.]+', 'key=[REDACTED]', msg)
+    return msg
+
 def query_llm_json(prompt: str, config: Optional[Dict[str, Any]] = None) -> Any:
     """
     Central LLM call function with structured JSON output, timeouts,
-    429 rate limit backoff, and quota exhaustion handling.
+    429 rate limit backoff, model auto-upgrade, and quota exhaustion handling.
     No other module may call an LLM API directly.
     """
     cfg = config or {}
@@ -26,8 +33,25 @@ def query_llm_json(prompt: str, config: Optional[Dict[str, Any]] = None) -> Any:
     if not api_key:
         raise ValueError("GEMINI_API_KEY is not configured in the environment.")
 
-    model = cfg.get("GEMINI_MODEL") or os.environ.get("GEMINI_MODEL", "gemini-2.0-flash-lite").strip()
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    model = cfg.get("GEMINI_MODEL") or os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
+    
+    # Automatically upgrade retired models to active flash-lite models
+    deprecated_models = {
+        "gemini-2.0-flash-lite": "gemini-3.5-flash-lite",
+        "gemini-2.0-flash": "gemini-3.5-flash-lite",
+        "gemini-1.5-flash": "gemini-3.5-flash-lite",
+        "gemini-2.5-flash-lite": "gemini-3.5-flash-lite",
+        "gemini-2.5-flash": "gemini-3.5-flash-lite",
+    }
+    if model in deprecated_models:
+        model = deprecated_models[model]
+
+    # Authenticate via header to keep key out of URLs and logs
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key,
+    }
 
     payload = {
         "contents": [
@@ -41,7 +65,6 @@ def query_llm_json(prompt: str, config: Optional[Dict[str, Any]] = None) -> Any:
         }
     }
 
-    headers = {"Content-Type": "application/json"}
     max_retries = 2
     timeout = 25  # Well below Gunicorn 120s limit
 
@@ -59,6 +82,13 @@ def query_llm_json(prompt: str, config: Optional[Dict[str, Any]] = None) -> Any:
                     continue
                 else:
                     raise RuntimeError("Gemini API rate limit hit (429). Please wait a moment and try again.")
+
+            # Fallback for 404 (model retired or not found)
+            if resp.status_code == 404 and model != "gemini-flash-lite-latest":
+                logger.warning(f"Model {model} returned 404. Retrying with fallback model 'gemini-flash-lite-latest'...")
+                model = "gemini-flash-lite-latest"
+                endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                resp = requests.post(endpoint, json=payload, headers=headers, timeout=timeout)
 
             # Check for quota exhaustion or bad request
             if resp.status_code == 403 or "RESOURCE_EXHAUSTED" in resp.text:
@@ -97,5 +127,7 @@ def query_llm_json(prompt: str, config: Optional[Dict[str, Any]] = None) -> Any:
             if attempt < max_retries and getattr(re_err.response, 'status_code', None) == 429:
                 time.sleep(2)
                 continue
-            logger.error(f"Gemini API request error: {re_err}")
-            raise RuntimeError(f"Error communicating with Gemini API: {str(re_err)}")
+            err_msg = _sanitize_error(str(re_err), api_key)
+            logger.error(f"Gemini API request error: {err_msg}")
+            raise RuntimeError(f"Error communicating with Gemini API: {err_msg}")
+
