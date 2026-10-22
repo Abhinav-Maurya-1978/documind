@@ -1,0 +1,90 @@
+:root {
+    --navy-primary: #0f172a;
+    --navy-secondary: #1e293b;
+    --brand-blue: #2563eb;
+    --brand-blue-hover: #1d4ed8;
+    --status-contradiction: #ef4444;
+    --status-consistent: #10b981;
+    --status-missing: #0ea5e9;
+    --status-uncertain: #f59e0b;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #1e293b;
+    background-color: #f8fafc;
+}
+
+.bg-navy {
+    background-color: var(--navy-primary) !important;
+}
+
+.bg-gradient-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
+}
+
+.upload-dropzone {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.upload-dropzone:hover, .upload-dropzone.dragover {
+    background-color: #eff6ff;
+    border-color: var(--brand-blue);
+}
+
+.stat-card {
+    transition: transform 0.15s ease-in-out;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.timeline-step .step-num {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.finding-card {
+    border-left: 5px solid transparent !important;
+    transition: box-shadow 0.2s ease;
+}
+
+.finding-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.finding-card.status-contradiction {
+    border-left-color: var(--status-contradiction) !important;
+}
+
+.finding-card.status-consistent {
+    border-left-color: var(--status-consistent) !important;
+}
+
+.finding-card.status-missing_info {
+    border-left-color: var(--status-missing) !important;
+}
+
+.finding-card.status-uncertain {
+    border-left-color: var(--status-uncertain) !important;
+}
+
+.blockquote-evidence {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-style: italic;
+    background-color: #f1f5f9;
+}
+
+.filter-btn-group .btn {
+    font-weight: 500;
+}

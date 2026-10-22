@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}DocuMind — AI Cross-Document Contradiction Auditor{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Hero / Innovation Banner -->
+    <div class="card border-0 shadow-sm bg-gradient-hero text-white mb-4 rounded-4 overflow-hidden">
+        <div class="card-body p-4 p-md-5">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-primary px-3 py-2 rounded-pill mb-2"><i class="fa-solid fa-microchip me-1"></i> Academic Innovation Competition</span>
+                    <h1 class="display-6 fw-bold mb-3">AI-Powered Cross-Document Contradiction Auditor</h1>
+                    <p class="lead text-white-50 mb-4">
+                        Automatically analyze multi-source procurement documents, detect conflicting amounts, dates, quantities, deadlines, and obligations, and produce <strong>verifiable page-grounded evidence</strong>.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3"><i class="fa-solid fa-check text-success me-1"></i> Evidence Grounded</span>
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3"><i class="fa-solid fa-check text-success me-1"></i> Deterministic Classification</span>
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3"><i class="fa-solid fa-check text-success me-1"></i> OCR Scanned Page Support</span>
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3"><i class="fa-solid fa-check text-success me-1"></i> Zero Paid API Requirement</span>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center d-none d-lg-block">
+                    <div class="hero-illustration p-4 rounded-4 bg-white bg-opacity-10 border border-light border-opacity-25">
+                        <i class="fa-solid fa-scale-unbalanced text-warning display-1 mb-3"></i>
+                        <h6 class="text-white mb-1">Cross-Document Verification</h6>
+                        <small class="text-white-50">Compare POs, Invoices & Contracts with cited quotations</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 stat-card">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small">Audits Executed</span>
+                        <span class="badge bg-primary-subtle text-primary"><i class="fa-solid fa-folder-open"></i></span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark">{{ stats.total_audits }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 stat-card">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small">Documents Analyzed</span>
+                        <span class="badge bg-info-subtle text-info"><i class="fa-solid fa-file-pdf"></i></span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-dark">{{ stats.total_docs_audited }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 stat-card">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small">Contradictions Flagged</span>
+                        <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-danger">{{ stats.total_contradictions }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 stat-card">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted small">Consistent Facts</span>
+                        <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check"></i></span>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-success">{{ stats.total_consistent }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload & Auditor Workstation -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h5 class="card-title fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up text-primary"></i> Upload Documents for Audit
+                    </h5>
+                    <small class="text-muted">Upload 2 or more related PDF documents (e.g. Purchase Order + Invoice + Delivery Slip)</small>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Drag and drop zone -->
+                    <div id="dropZone" class="upload-dropzone p-5 text-center rounded-4 mb-3 border-2 border-dashed">
+                        <i class="fa-solid fa-file-pdf display-4 text-primary mb-3"></i>
+                        <h5 class="fw-bold mb-1">Drag and drop your PDF documents here</h5>
+                        <p class="text-muted small mb-3">or browse from your device (standard PDFs, text-based or scanned)</p>
+                        <input type="file" id="fileInput" name="documents" multiple accept=".pdf" class="d-none">
+                        <button type="button" class="btn btn-outline-primary px-4 rounded-pill" onclick="document.getElementById('fileInput').click()">
+                            <i class="fa-solid fa-folder-open me-2"></i> Select PDF Files
+                        </button>
+                    </div>
+
+                    <!-- Selected Files List -->
+                    <div id="selectedFilesContainer" class="d-none mb-3">
+                        <h6 class="fw-bold small text-muted text-uppercase mb-2">Selected Documents (<span id="fileCount">0</span>)</h6>
+                        <ul id="fileList" class="list-group rounded-3 mb-3"></ul>
+                    </div>
+
+                    <!-- Alert message box -->
+                    <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+                        <i class="fa-solid fa-circle-exclamation me-2"></i>
+                        <span id="errorMessage"></span>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div id="progressWrapper" class="d-none mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                            <span id="progressStatus">Auditing cross-document claims...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between pt-2">
+                        <button type="button" id="startAuditBtn" class="btn btn-primary btn-lg px-4 rounded-pill fw-bold shadow-sm" disabled>
+                            <i class="fa-solid fa-bolt me-2"></i> Run Contradiction Audit
+                        </button>
+                        <button type="button" id="demoSampleBtn" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fa-solid fa-vial me-2"></i> Load Demo Test Pair (PO vs Invoice)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Features & Recent Audits -->
+        <div class="col-lg-4">
+            <!-- How It Works Card -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-circle-info text-info me-2"></i> How DocuMind Works</h6>
+                </div>
+                <div class="card-body p-3">
+                    <div class="timeline-step d-flex gap-3 mb-3">
+                        <div class="step-num bg-primary text-white rounded-circle">1</div>
+                        <div>
+                            <strong class="small d-block text-dark">Page-by-Page Extraction</strong>
+                            <span class="text-muted small">Extracts digital text and falls back to OCR on scanned pages.</span>
+                        </div>
+                    </div>
+                    <div class="timeline-step d-flex gap-3 mb-3">
+                        <div class="step-num bg-primary text-white rounded-circle">2</div>
+                        <div>
+                            <strong class="small d-block text-dark">Deterministic Claim Extraction</strong>
+                            <span class="text-muted small">Standardizes amounts, currencies, dates, deadlines, and quantities.</span>
+                        </div>
+                    </div>
+                    <div class="timeline-step d-flex gap-3 mb-3">
+                        <div class="step-num bg-primary text-white rounded-circle">3</div>
+                        <div>
+                            <strong class="small d-block text-dark">Fuzzy & TF-IDF Matching</strong>
+                            <span class="text-muted small">Pairs claims referencing the same order, line item, or contract term.</span>
+                        </div>
+                    </div>
+                    <div class="timeline-step d-flex gap-3">
+                        <div class="step-num bg-success text-white rounded-circle">4</div>
+                        <div>
+                            <strong class="small d-block text-dark">Evidence-Grounded Classification</strong>
+                            <span class="text-muted small">Identifies contradictions with verified quotes from original pages.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Audits List -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> Recent Sessions</h6>
+                    <a href="{{ url_for('history') }}" class="small text-decoration-none">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_audits %}
+                    <ul class="list-group list-group-flush">
+                        {% for a in recent_audits %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <a href="{{ url_for('view_audit', session_id=a.session_id) }}" class="fw-bold text-decoration-none text-dark d-block">
+                                    {{ a.session_id }}
+                                </a>
+                                <small class="text-muted">{{ a.created_at[:19].replace('T', ' ') }} • {{ a.total_documents }} docs</small>
+                            </div>
+                            <div>
+                                {% if a.contradictions_count > 0 %}
+                                <span class="badge bg-danger rounded-pill">{{ a.contradictions_count }} Conflicts</span>
+                                {% else %}
+                                <span class="badge bg-success rounded-pill">0 Conflicts</span>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="p-4 text-center text-muted small">
+                        <i class="fa-regular fa-folder-open d-block fs-3 mb-2 text-muted"></i>
+                        No audit sessions recorded yet. Upload documents above to run your first audit.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
