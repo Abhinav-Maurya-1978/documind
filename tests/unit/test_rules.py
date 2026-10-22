@@ -1,5 +1,5 @@
 from documind.detection.rules import ContradictionRules
-from documind.extraction.models import ExtractedClaim, FindingStatus, ValueType, ReviewStatus
+from documind.extraction.models import ExtractedClaim, FindingSeverity, FindingStatus, ValueType, ReviewStatus
 
 def make_claim(attr, orig_val, norm_val, val_type, unit=None, doc="doc1.pdf", page=1, review=ReviewStatus.EXTRACTED):
     return ExtractedClaim(
@@ -54,3 +54,12 @@ def test_missing_info_not_contradiction():
 
     res = ContradictionRules.evaluate_pair(c1, c2, "missing_attribute")
     assert res.status == FindingStatus.MISSING_INFO
+
+def test_person_name_contradiction():
+    c1 = make_claim("person_name", "Rohan Sharma", "Rohan Sharma", ValueType.PERSON_NAME, doc="letter.pdf")
+    c2 = make_claim("person_name", "Rohan Kumar", "Rohan Kumar", ValueType.PERSON_NAME, doc="app.pdf")
+
+    res = ContradictionRules.evaluate_pair(c1, c2, "exact_attribute")
+    assert res.status == FindingStatus.CONTRADICTION
+    assert res.severity == FindingSeverity.CRITICAL
+    assert "Critical Identity Mismatch" in res.explanation

@@ -11,6 +11,9 @@ class ValueType(str, enum.Enum):
     PAYMENT_TERM = "payment_term"
     DELIVERY_TERM = "delivery_term"
     TAX_ID = "tax_id"
+    PERSON_NAME = "person_name"
+    COMPENSATION = "compensation"
+    TIMELINE = "timeline"
     TEXT = "text"
 
 class FindingStatus(str, enum.Enum):

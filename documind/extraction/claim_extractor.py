@@ -20,7 +20,18 @@ class ClaimExtractor:
         r"(?:amount\s+due|balance\s+due|payable\s+amount)\s*[:=\-]?\s*([^\n\r;]{0,15}?\b\d{1,3}(?:[,\s]\d{2,3})*(?:\.\d{1,2})?\b\s*(?:inr|usd|eur|gbp|rupees|rs\.?)?)",
     ]
 
+    NAME_PATTERNS = [
+        (r"(?:employee\s+name|applicant\s+name|candidate\s+name|student\s+name|person\s+name|individual\s+name|name)\s*[:=\-]\s*([A-Za-z\s\.\'\-]+?)(?:\r?\n|$)", "person_name"),
+        (r"(?:vendor\s+name|supplier\s+name|company\s+name|client\s+name|customer\s+name|organization\s+name)\s*[:=\-]\s*([A-Za-z0-9\s\.\,\'\-]+?)(?:\r?\n|$)", "organization_name"),
+    ]
+
+    COMPENSATION_PATTERNS = [
+        (r"(?:annual\s+ctc|ctc|annual\s+salary|annual\s+package)\s*[:=\-]?\s*([^\n\r;]{0,15}?\b\d{1,3}(?:[,\s]\d{2,3})*(?:\.\d{1,2})?\b\s*(?:inr|usd|eur|gbp|rupees|rs\.?)?)", "annual_compensation"),
+        (r"(?:monthly\s+salary|monthly\s+stipend|monthly\s+pay|monthly\s+ctc)\s*[:=\-]?\s*([^\n\r;]{0,15}?\b\d{1,3}(?:[,\s]\d{2,3})*(?:\.\d{1,2})?\b\s*(?:inr|usd|eur|gbp|rupees|rs\.?)?)", "monthly_compensation"),
+    ]
+
     DATE_PATTERNS = [
+        (r"(?:date\s+of\s+birth|dob|birth\s+date)\s*[:=\-]?\s*([0-9a-zA-Z\s,/\.\-]+?)(?:\r?\n|$)", "date_of_birth"),
         (r"(?:order\s+date|po\s+date|date\s+of\s+order)\s*[:=\-]?\s*([0-9a-zA-Z\s,/\.\-]+?)(?:\r?\n|$)", "order_date"),
         (r"(?:invoice\s+date|billing\s+date|date\s+of\s+invoice)\s*[:=\-]?\s*([0-9a-zA-Z\s,/\.\-]+?)(?:\r?\n|$)", "invoice_date"),
         (r"(?:delivery\s+date|expected\s+delivery|shipment\s+date)\s*[:=\-]?\s*([0-9a-zA-Z\s,/\.\-]+?)(?:\r?\n|$)", "delivery_date"),
@@ -110,6 +121,56 @@ class ClaimExtractor:
                         confidence=0.95,
                     )
                 )
+
+        # 1b. Extract Names (Person and Organization)
+        for pat, attr in self.NAME_PATTERNS:
+            for match in re.finditer(pat, text, re.IGNORECASE):
+                val = match.group(1).strip()
+                if not val or len(val) < 2:
+                    continue
+                snippet = self._get_context_snippet(text, match.start(), match.end())
+                claims.append(
+                    ExtractedClaim(
+                        claim_id=str(uuid.uuid4())[:8],
+                        entity=default_entity,
+                        attribute=attr,
+                        original_value=val,
+                        normalized_value=re.sub(r"\s+", " ", val).strip().title(),
+                        value_type=ValueType.PERSON_NAME if attr == "person_name" else ValueType.TEXT,
+                        source_document=doc_name,
+                        page_number=page.page_number,
+                        evidence=snippet,
+                        char_start=match.start(),
+                        char_end=match.end(),
+                        confidence=0.95,
+                    )
+                )
+
+        # 1c. Extract Compensation / Salary
+        for pat, attr in self.COMPENSATION_PATTERNS:
+            for match in re.finditer(pat, text, re.IGNORECASE):
+                raw_val = match.group(1).strip()
+                norm_res = ValueNormalizer.normalize_monetary(raw_val)
+                if norm_res["valid"]:
+                    annual_equiv = norm_res["normalized"] if attr == "annual_compensation" else (norm_res["normalized"] * 12)
+                    snippet = self._get_context_snippet(text, match.start(), match.end())
+                    claims.append(
+                        ExtractedClaim(
+                            claim_id=str(uuid.uuid4())[:8],
+                            entity=default_entity,
+                            attribute="annual_compensation",
+                            original_value=raw_val,
+                            normalized_value=annual_equiv,
+                            value_type=ValueType.COMPENSATION,
+                            unit=norm_res["currency"],
+                            source_document=doc_name,
+                            page_number=page.page_number,
+                            evidence=snippet,
+                            char_start=match.start(),
+                            char_end=match.end(),
+                            confidence=0.95,
+                        )
+                    )
 
         # 2. Extract Total Amounts
         for pat in self.TOTAL_PATTERNS:
