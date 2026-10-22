@@ -4,14 +4,16 @@ import uuid
 from typing import List, Optional
 from .models import ExtractedClaim, ReviewStatus, ValueType
 from .normalizers import ValueNormalizer
+from .timeline_extractor import TimelineExtractor
 from ..ingestion.pdf_processor import ProcessedDocument, ProcessedPage
 
 logger = logging.getLogger(__name__)
 
 class ClaimExtractor:
     """
-    Deterministic rule-based extractor for enterprise document claims:
-    totals, line items, dates, deadlines, identifiers, and obligations.
+    Universal deterministic extractor for document claims:
+    totals, line items, dates, deadlines, identifiers, personal identities,
+    freeform timeline intervals, and dynamic key-value attributes.
     """
 
     # Common patterns
@@ -60,6 +62,7 @@ class ClaimExtractor:
 
     def __init__(self, llm_config: Optional[dict] = None):
         self.llm_config = llm_config or {}
+        self.timeline_extractor = TimelineExtractor()
 
     def extract_document_claims(self, doc: ProcessedDocument) -> List[ExtractedClaim]:
         """Extracts structured claims from all pages of a processed document."""
@@ -287,6 +290,91 @@ class ClaimExtractor:
                             confidence=0.9,
                         )
                     )
+
+        # 6. Extract Universal Timeline Assertions (Employment, Education, Overlapping commitments)
+        timelines = self.timeline_extractor.extract_timelines(text)
+        for t in timelines:
+            char_idx = text.find(t.evidence_snippet)
+            claims.append(
+                ExtractedClaim(
+                    claim_id=str(uuid.uuid4())[:8],
+                    entity=default_entity,
+                    attribute="timeline_commitment",
+                    original_value=t.raw_text,
+                    normalized_value={
+                        "activity_type": t.activity_type,
+                        "commitment": t.commitment,
+                        "role": t.role_or_title,
+                        "start_year": t.start_year,
+                        "start_month": t.start_month,
+                        "end_year": t.end_year,
+                        "end_month": t.end_month,
+                    },
+                    value_type=ValueType.TIMELINE,
+                    source_document=doc_name,
+                    page_number=page.page_number,
+                    evidence=t.evidence_snippet,
+                    char_start=char_idx if char_idx != -1 else 0,
+                    char_end=(char_idx + len(t.evidence_snippet)) if char_idx != -1 else len(t.evidence_snippet),
+                    confidence=0.92,
+                )
+            )
+
+        # 7. Universal Dynamic Key-Value Parsing (Catches ANY field in any document)
+        already_extracted_attrs = {c.attribute for c in claims}
+        for line in lines:
+            m_kv = re.match(r"^([A-Za-z0-9\s\-_/]{2,35})\s*[:=\-]\s*(.+)$", line)
+            if m_kv:
+                raw_key = m_kv.group(1).strip()
+                raw_val = m_kv.group(2).strip()
+                norm_key = re.sub(r"[\s\-_/]+", "_", raw_key).lower().strip("_")
+
+                if len(raw_val) < 1 or norm_key in already_extracted_attrs or norm_key in ("page", "note", "terms", "conditions", "summary", "http", "https"):
+                    continue
+
+                norm_amount = ValueNormalizer.normalize_monetary(raw_val)
+                norm_date = ValueNormalizer.normalize_date(raw_val)
+
+                if norm_amount["valid"] and (norm_amount["currency"] != "UNKNOWN" or any(k in norm_key for k in ("ctc", "salary", "amount", "price", "total", "fee"))):
+                    v_type = ValueType.MONETARY
+                    n_val = norm_amount["normalized"]
+                    unit = norm_amount["currency"]
+                elif norm_date["valid"] and any(k in norm_key for k in ("date", "dob", "birth", "day")):
+                    v_type = ValueType.DATE
+                    n_val = norm_date["normalized"]
+                    unit = None
+                elif any(k in norm_key for k in ("name", "person", "applicant", "employee")):
+                    v_type = ValueType.PERSON_NAME
+                    n_val = raw_val.strip().title()
+                    unit = None
+                elif any(k in norm_key for k in ("id", "pan", "gstin", "ssn", "number", "code", "ref")):
+                    v_type = ValueType.IDENTIFIER
+                    n_val = ValueNormalizer.normalize_identifier(raw_val)
+                    unit = None
+                else:
+                    v_type = ValueType.TEXT
+                    n_val = raw_val.strip()
+                    unit = None
+
+                char_idx = text.find(line)
+                claims.append(
+                    ExtractedClaim(
+                        claim_id=str(uuid.uuid4())[:8],
+                        entity=default_entity,
+                        attribute=norm_key,
+                        original_value=raw_val,
+                        normalized_value=n_val,
+                        value_type=v_type,
+                        unit=unit,
+                        source_document=doc_name,
+                        page_number=page.page_number,
+                        evidence=line,
+                        char_start=char_idx if char_idx != -1 else 0,
+                        char_end=(char_idx + len(line)) if char_idx != -1 else len(line),
+                        confidence=0.88,
+                    )
+                )
+                already_extracted_attrs.add(norm_key)
 
         # Deduplicate identical claims on the same page
         unique_claims = []

@@ -12,10 +12,22 @@ class ContradictionEngine:
 
     def analyze_pairs(self, pairs: List[ClaimPair]) -> List[ComparisonFinding]:
         findings: List[ComparisonFinding] = []
+        seen_comparisons = set()
 
         for pair in pairs:
             c1 = pair.claim_a
             c2 = pair.claim_b
+
+            # Deduplicate comparisons examining the same values between the two documents
+            comp_key = (
+                c1.source_document,
+                c2.source_document,
+                str(c1.normalized_value).strip().lower(),
+                str(c2.normalized_value).strip().lower(),
+            )
+            if comp_key in seen_comparisons:
+                continue
+            seen_comparisons.add(comp_key)
 
             rule_res = self.rules.evaluate_pair(c1, c2, match_type=pair.match_type)
 

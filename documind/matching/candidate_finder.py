@@ -114,4 +114,36 @@ class CandidateFinder:
                     similarity_score=0.90,
                 )
 
+        # 5. Timeline commitments comparison
+        if c1.value_type == ValueType.TIMELINE and c2.value_type == ValueType.TIMELINE:
+            return ClaimPair(
+                claim_a=c1,
+                claim_b=c2,
+                match_type="timeline_overlap",
+                similarity_score=0.90,
+            )
+
+        # 6. Universal Semantic & Fuzzy Key Pairing (Catches any related dynamic attributes)
+        if c1.value_type == c2.value_type and c1.value_type != ValueType.QUANTITY:
+            key_sim = fuzz.token_sort_ratio(c1.attribute.lower(), c2.attribute.lower()) / 100.0
+            if key_sim >= 0.60:
+                return ClaimPair(
+                    claim_a=c1,
+                    claim_b=c2,
+                    match_type="fuzzy_attribute",
+                    similarity_score=key_sim,
+                )
+
+            is_name_match = (c1.value_type == ValueType.PERSON_NAME and c2.value_type == ValueType.PERSON_NAME)
+            is_comp_match = any(k in c1.attribute for k in ("ctc", "salary", "pay", "compensation")) and any(k in c2.attribute for k in ("ctc", "salary", "pay", "compensation"))
+            is_dob_match = any(k in c1.attribute for k in ("dob", "birth")) and any(k in c2.attribute for k in ("dob", "birth"))
+
+            if is_name_match or is_comp_match or is_dob_match:
+                return ClaimPair(
+                    claim_a=c1,
+                    claim_b=c2,
+                    match_type="semantic_attribute",
+                    similarity_score=0.88,
+                )
+
         return None

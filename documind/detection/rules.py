@@ -20,6 +20,10 @@ class ContradictionRules:
         if c1.normalized_value is None or c2.normalized_value is None:
             return cls._evaluate_missing_info(c1, c2)
 
+        # 1a. Timeline overlap comparison
+        if c1.value_type == ValueType.TIMELINE and c2.value_type == ValueType.TIMELINE:
+            return cls._evaluate_timeline_overlap(c1, c2)
+
         # 1b. Person and Entity Name comparison
         if c1.value_type == ValueType.PERSON_NAME or c2.value_type == ValueType.PERSON_NAME:
             return cls._evaluate_person_name(c1, c2)
@@ -65,6 +69,103 @@ class ContradictionRules:
             explanation=f"Potential discrepancy in '{c1.attribute}': '{c1.original_value}' vs '{c2.original_value}'.",
             requires_human_review=True,
             confidence=0.75,
+            details={},
+        )
+
+    @classmethod
+    def _evaluate_timeline_overlap(cls, c1: ExtractedClaim, c2: ExtractedClaim) -> ComparisonRuleResult:
+        t1 = c1.normalized_value
+        t2 = c2.normalized_value
+
+        if not isinstance(t1, dict) or not isinstance(t2, dict):
+            return ComparisonRuleResult(
+                status=FindingStatus.CONSISTENT,
+                severity=FindingSeverity.INFO,
+                explanation="Timeline periods are consistent.",
+                requires_human_review=False,
+                confidence=0.85,
+                details={},
+            )
+
+        s1_y, s1_m = t1.get("start_year"), t1.get("start_month", 1)
+        e1_y, e1_m = t1.get("end_year"), t1.get("end_month", 12)
+        s2_y, s2_m = t2.get("start_year"), t2.get("start_month", 1)
+        e2_y, e2_m = t2.get("end_year"), t2.get("end_month", 12)
+
+        if not (s1_y and e1_y and s2_y and e2_y):
+            return ComparisonRuleResult(
+                status=FindingStatus.CONSISTENT,
+                severity=FindingSeverity.INFO,
+                explanation="Timeline periods align.",
+                requires_human_review=False,
+                confidence=0.85,
+                details={},
+            )
+
+        start1 = s1_y * 12 + s1_m
+        end1 = e1_y * 12 + e1_m
+        start2 = s2_y * 12 + s2_m
+        end2 = e2_y * 12 + e2_m
+
+        overlap_start = max(start1, start2)
+        overlap_end = min(end1, end2)
+        has_overlap = overlap_start <= overlap_end
+
+        commit1 = t1.get("commitment", "unspecified")
+        commit2 = t2.get("commitment", "unspecified")
+        act1 = t1.get("activity_type")
+        act2 = t2.get("activity_type")
+        role1 = t1.get("role") or act1
+        role2 = t2.get("role") or act2
+
+        if has_overlap:
+            overlap_months = (overlap_end - overlap_start) + 1
+            is_dual_fulltime = (commit1 == "full-time" or "regular" in str(c1.original_value).lower()) and \
+                               (commit2 == "full-time" or "regular" in str(c2.original_value).lower())
+
+            is_edu_emp_conflict = (act1 == "education" and act2 == "employment") or (act1 == "employment" and act2 == "education")
+
+            if is_dual_fulltime and is_edu_emp_conflict:
+                emp_doc = c1.source_document if act1 == "employment" else c2.source_document
+                emp_role = role1 if act1 == "employment" else role2
+                emp_period = f"{s1_y}-{e1_y}" if act1 == "employment" else f"{s2_y}-{e2_y}"
+
+                edu_doc = c2.source_document if act1 == "employment" else c1.source_document
+                edu_role = role2 if act1 == "employment" else role1
+                edu_period = f"{s2_y}-{e2_y}" if act1 == "employment" else f"{s1_y}-{e1_y}"
+
+                return ComparisonRuleResult(
+                    status=FindingStatus.CONTRADICTION,
+                    severity=FindingSeverity.CRITICAL,
+                    explanation=(
+                        f"Mutually Exclusive Timeline Conflict: '{emp_doc}' claims candidate worked full-time as '{emp_role}' "
+                        f"({emp_period}). Simultaneously, '{edu_doc}' asserts the candidate was enrolled as a regular full-time "
+                        f"student ({edu_role}, {edu_period}), overlapping by {overlap_months} months. "
+                        "Concurrent full-time corporate employment during regular full-time undergraduate university degree is physically and regulatory incompatible."
+                    ),
+                    requires_human_review=True,
+                    confidence=0.98,
+                    details={"overlap_months": overlap_months, "t1": c1.original_value, "t2": c2.original_value},
+                )
+
+            return ComparisonRuleResult(
+                status=FindingStatus.UNCERTAIN,
+                severity=FindingSeverity.MEDIUM,
+                explanation=(
+                    f"Timeline overlap detected ({overlap_months} months): '{c1.original_value}' overlaps with '{c2.original_value}'. "
+                    "Requires human auditor review to confirm compatibility."
+                ),
+                requires_human_review=True,
+                confidence=0.85,
+                details={"overlap_months": overlap_months},
+            )
+
+        return ComparisonRuleResult(
+            status=FindingStatus.CONSISTENT,
+            severity=FindingSeverity.INFO,
+            explanation=f"Sequential timeline: '{c1.original_value}' and '{c2.original_value}' occur in non-conflicting periods.",
+            requires_human_review=False,
+            confidence=0.92,
             details={},
         )
 
