@@ -1,5 +1,8 @@
 # DocuMind — AI-Powered Cross-Document Contradiction Auditor
 
+[![Live Web Application](https://img.shields.io/badge/Live%20Demo-documind--40d7.onrender.com-success?style=for-the-badge&logo=render)](https://documind-40d7.onrender.com)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?style=for-the-badge&logo=github)](https://github.com/Abhinav-Maurya-1978/documind)
+
 [![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.14-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Framework-Flask%203.x-green.svg)](https://flask.palletsprojects.com/)
 [![Tests](https://img.shields.io/badge/Test%20Suite-28%20Passed-brightgreen.svg)]()
@@ -7,6 +10,8 @@
 [![Recall](https://img.shields.io/badge/Recall-100%25-success.svg)]()
 [![F1](https://img.shields.io/badge/F1%20Score-1.00-success.svg)]()
 
+> **Live Public Application**: [https://documind-40d7.onrender.com](https://documind-40d7.onrender.com)  
+> **Health Check Endpoint**: [https://documind-40d7.onrender.com/health](https://documind-40d7.onrender.com/health)  
 > **Academic Innovation Competition Project**  
 > An enterprise-grade document intelligence system designed to automatically detect conflicting amounts, quantities, dates, deadlines, identifiers, and obligations across related procurement documents (POs, Invoices, Delivery Slips, Quotations, and Contracts) with **verifiable page-grounded evidence**.
 
@@ -177,6 +182,11 @@ The repository includes pre-configured deployment files:
 - `Procfile`: `web: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 app:app`
 - `render.yaml`: Blueprint definition for Python 3.11 web service with environment variables.
 - Health check endpoint: `GET /health` (returns 200 OK with service health and OCR availability).
+
+### Public Live Deployment
+- **Live URL**: [https://documind-40d7.onrender.com](https://documind-40d7.onrender.com)
+- **Health Check**: [https://documind-40d7.onrender.com/health](https://documind-40d7.onrender.com/health)
+- **Deployment Platform**: Render Web Service (Free Tier, Python 3.11, Gunicorn WSGI)
 
 ### Steps to Deploy on Render:
 1. Fork or push this repository to GitHub.
