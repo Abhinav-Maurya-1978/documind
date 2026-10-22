@@ -28,10 +28,17 @@ class Config:
     # Retention Policy
     AUTO_CLEANUP_UPLOADS = os.environ.get("AUTO_CLEANUP_UPLOADS", "true").lower() in ("1", "true", "yes")
 
-    # Optional LLM Enhancement
-    LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "none").lower()
+    # Optional LLM Enhancement & Fact Checker Configuration
+    LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "gemini").lower()
     LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
     LLM_MODEL = os.environ.get("LLM_MODEL", "")
+
+    # Gemini & Fact-Checking Providers (Free Tier APIs)
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash-lite")
+    FACTCHECK_API_KEY = os.environ.get("FACTCHECK_API_KEY", "")
+    TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
+    FACTCHECK_MAX_CLAIMS = int(os.environ.get("FACTCHECK_MAX_CLAIMS", 12))
 
     @classmethod
     def init_app(cls):

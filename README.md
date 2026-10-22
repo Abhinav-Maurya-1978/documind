@@ -215,6 +215,49 @@ The repository includes pre-configured deployment files:
 
 ---
 
-## 10. License
+## 10. AI Fact Checker (External Evidence Verification)
+
+DocuMind features an **AI Fact Checker** (`/factcheck`) that verifies factual statements in single uploaded PDF documents against open world knowledge.
+
+### Features
+- **Client-Driven Stateless Architecture**: Browser coordinates extraction and sequential claim verification, avoiding long-running server requests and Gunicorn timeouts.
+- **Strict Grounding Verification**: Extracted quotes from the document must be an exact substring of the PDF page text; ungrounded or hallucinated claims are discarded.
+- **Multi-Source Evidence Retrieval**: Queries Wikipedia (free & keyless), Google Fact Check Tools API, and Tavily Search API.
+- **Strict Evidence-Based Judging**: Gemini Flash-Lite evaluates claims strictly from numbered retrieved snippets. If no evidence is retrieved, the claim is marked `Unverifiable` without invoking the LLM.
+- **Privacy & Ephemeral Storage**: PDFs are validated in-memory and immediately destroyed after claim extraction; fact-checks are not logged to disk or audit history.
+
+### How to Obtain Free API Keys
+
+1. **Google Gemini API Key (Required for AI Extraction & Judging)**:
+   - Visit [Google AI Studio](https://aistudio.google.com/).
+   - Click **Get API key** $\rightarrow$ **Create API key**.
+   - Free Tier Limits: 15 RPM (Requests Per Minute), 1,500 RPD (Requests Per Day), 1,000,000 TPM.
+
+2. **Google Fact Check Tools API Key (Free, Recommended)**:
+   - Visit [Google Cloud Console](https://console.cloud.google.com/).
+   - Enable the **Fact Check Tools API**.
+   - Go to **APIs & Services** $\rightarrow$ **Credentials** $\rightarrow$ **Create Credentials** $\rightarrow$ **API key**.
+
+3. **Wikipedia Search API**:
+   - Built-in, completely free, and requires **no API key**.
+
+4. **Tavily Search API (Optional Auxiliary Source)**:
+   - Register at [Tavily](https://tavily.com/).
+   - Free Tier: 1,000 free search queries per month.
+
+### Fact-Checking Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | `""` | Google Gemini API key for structured claim extraction and judging |
+| `GEMINI_MODEL` | `gemini-2.0-flash-lite` | High-throughput low-latency Gemini Flash-Lite model |
+| `LLM_PROVIDER` | `gemini` | LLM provider backend (`gemini` supported; `groq` stub available) |
+| `FACTCHECK_API_KEY` | `""` | Google Cloud API key for Fact Check Tools API |
+| `TAVILY_API_KEY` | `""` | Tavily Search API key (optional extra source) |
+| `FACTCHECK_MAX_CLAIMS` | `12` | Maximum verifiable claims checked per document |
+
+---
+
+## 11. License
 
 Developed for the Academic Innovation Competition. MIT License.

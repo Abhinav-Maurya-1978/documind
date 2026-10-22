@@ -16,3 +16,13 @@ services:
         value: sqlite:///instance/documind.db
       - key: ENABLE_OCR
         value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash-lite
+      - key: FACTCHECK_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: FACTCHECK_MAX_CLAIMS
+        value: "12"

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}AI Fact Checker — DocuMind{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Card -->
+    <div class="card border-0 shadow-sm bg-gradient-hero text-white mb-4 rounded-4 overflow-hidden">
+        <div class="card-body p-4 p-md-5">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill mb-2 fw-semibold">
+                        <i class="fa-solid fa-brain me-1"></i> External AI Fact Verification
+                    </span>
+                    <h1 class="display-6 fw-bold mb-3">Document AI Fact Checker</h1>
+                    <p class="lead text-white-50 mb-3">
+                        Upload a single PDF document to automatically extract verifiable factual claims, cross-reference them against open web sources (Google Fact Check, Wikipedia, and Tavily), and obtain verifiable evidence verdicts.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3">
+                            <i class="fa-solid fa-check text-success me-1"></i> Wikipedia (Free & Keyless)
+                        </span>
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3">
+                            <i class="fa-solid fa-check text-success me-1"></i> Google Fact Check Tools
+                        </span>
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3">
+                            <i class="fa-solid fa-check text-success me-1"></i> Exact Quoted Grounding
+                        </span>
+                        <span class="badge bg-dark bg-opacity-50 border border-light border-opacity-25 p-2 px-3">
+                            <i class="fa-solid fa-shield-halved text-info me-1"></i> Stateless (Never Stored)
+                        </span>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center d-none d-lg-block">
+                    <div class="p-4 rounded-4 bg-white bg-opacity-10 border border-light border-opacity-25">
+                        <i class="fa-solid fa-magnifying-glass-chart text-info display-1 mb-3"></i>
+                        <h6 class="text-white mb-1">External Truth Verification</h6>
+                        <small class="text-white-50">Ground document statements in independent world knowledge</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Notice / Status -->
+    {% if missing_keys %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4" role="alert">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="fa-solid fa-triangle-exclamation text-warning fs-5"></i>
+            <strong class="text-dark">Environment Setup Notice</strong>
+        </div>
+        <p class="small text-dark mb-0">
+            The following free API key(s) are not configured in your environment: 
+            <strong>{{ missing_keys|join(', ') }}</strong>. 
+            To enable full AI claim extraction and external fact-checking, add <code>GEMINI_API_KEY</code> to your <code>.env</code> file or Render Environment tab.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Mandatory Privacy & AI Disclaimers -->
+    <div class="alert alert-info bg-light border border-info-subtle rounded-3 mb-4 p-3" role="alert">
+        <div class="d-flex gap-2">
+            <i class="fa-solid fa-circle-exclamation text-info mt-1"></i>
+            <div class="small text-secondary">
+                <strong class="d-block text-dark mb-1">Notice: AI-generated results. Verify with a human.</strong>
+                <span>The text of your PDF is sent to third-party AI and search services (Google Gemini, Google Fact Check, Wikipedia, Tavily). Google may use free-tier data to improve its models. Do not upload confidential documents.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload & Fact-Check Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="card-title fw-bold mb-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-file-arrow-up text-primary"></i> Select Document to Fact-Check
+            </h5>
+            <small class="text-muted">Upload one (1) PDF document (up to 50 pages / 32 MB). Processed entirely in-memory and discarded.</small>
+        </div>
+        <div class="card-body p-4">
+            <!-- Dropzone -->
+            <div id="dropZone" class="upload-dropzone p-5 text-center rounded-4 mb-3 border-2 border-dashed">
+                <i class="fa-solid fa-file-pdf display-4 text-primary mb-3"></i>
+                <h5 class="fw-bold mb-1">Drag and drop your PDF here</h5>
+                <p class="text-muted small mb-3">or browse from your computer (single document)</p>
+                <input type="file" id="fileInput" name="document" accept=".pdf" class="d-none">
+                <button type="button" class="btn btn-outline-primary px-4 rounded-pill" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-folder-open me-2"></i> Select PDF File
+                </button>
+            </div>
+
+            <!-- Selected File Display -->
+            <div id="selectedFileContainer" class="d-none mb-3">
+                <div class="list-group rounded-3">
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                        <div class="d-flex align-items-center gap-2 text-truncate me-2">
+                            <i class="fa-solid fa-file-pdf text-danger fs-4"></i>
+                            <div>
+                                <strong id="selectedFileName" class="d-block text-truncate small"></strong>
+                                <span id="selectedFileSize" class="text-muted small"></span>
+                            </div>
+                        </div>
+                        <button type="button" id="removeFileBtn" class="btn btn-sm btn-link text-danger p-0">
+                            <i class="fa-solid fa-xmark fs-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Alert -->
+            <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+                <i class="fa-solid fa-circle-exclamation me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div id="progressWrapper" class="d-none mb-3">
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span id="progressStatus">Reading PDF and extracting claims...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <div class="d-flex justify-content-between align-items-center pt-2">
+                <button type="button" id="startFactCheckBtn" class="btn btn-primary btn-lg px-4 rounded-pill fw-bold shadow-sm" disabled>
+                    <i class="fa-solid fa-clipboard-check me-2"></i> Run AI Fact Check
+                </button>
+                <span class="small text-muted">Max {{ max_claims }} factual claims checked per run</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="d-none">
+        <!-- Summary Stats Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <div class="row g-3 text-center">
+                    <div class="col-3 border-end">
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Claims Checked</span>
+                        <h3 id="statTotal" class="fw-bold mb-0 text-dark">0</h3>
+                    </div>
+                    <div class="col-3 border-end">
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Supported</span>
+                        <h3 id="statSupported" class="fw-bold mb-0 text-success">0</h3>
+                    </div>
+                    <div class="col-3 border-end">
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Contradicted</span>
+                        <h3 id="statContradicted" class="fw-bold mb-0 text-danger">0</h3>
+                    </div>
+                    <div class="col-3">
+                        <span class="text-muted small text-uppercase fw-semibold d-block">Unverifiable</span>
+                        <h3 id="statUnverifiable" class="fw-bold mb-0 text-secondary">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Claims Cards Container -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list-check text-primary me-2"></i> Verified Claims</h5>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active filter-btn" data-filter="all">All</button>
+                <button type="button" class="btn btn-outline-success filter-btn" data-filter="Supported">Supported</button>
+                <button type="button" class="btn btn-outline-danger filter-btn" data-filter="Contradicted">Contradicted</button>
+                <button type="button" class="btn btn-outline-secondary filter-btn" data-filter="Unverifiable">Unverifiable</button>
+            </div>
+        </div>
+
+        <div id="claimsContainer" class="d-flex flex-column gap-3 mb-5">
+            <!-- Dynamic claim cards populated safely via textContent in JS -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/factcheck.js') }}"></script>
+{% endblock %}

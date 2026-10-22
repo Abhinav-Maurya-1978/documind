@@ -13,6 +13,7 @@ from documind.matching import ClaimMatcher
 from documind.detection import ContradictionEngine
 from documind.evidence import EvidenceVerifier
 from documind.storage import Database
+from documind.factcheck import factcheck_bp
 
 # Configure structured logging
 logging.basicConfig(
@@ -53,6 +54,9 @@ def create_app(config_class=Config) -> Flask:
     contradiction_engine = ContradictionEngine()
     evidence_verifier = EvidenceVerifier()
     db = Database(db_url=app.config["DATABASE_URL"])
+
+    # Register blueprints
+    app.register_blueprint(factcheck_bp)
 
     @app.route("/")
     def index():
