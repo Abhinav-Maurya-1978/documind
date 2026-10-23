@@ -42,21 +42,6 @@
         </div>
     </div>
 
-    <!-- API Key Notice / Status -->
-    {% if missing_keys %}
-    <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4" role="alert">
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <i class="fa-solid fa-triangle-exclamation text-warning fs-5"></i>
-            <strong class="text-dark">Environment Setup Notice</strong>
-        </div>
-        <p class="small text-dark mb-0">
-            The following free API key(s) are not configured in your environment: 
-            <strong>{{ missing_keys|join(', ') }}</strong>. 
-            To enable full AI claim extraction and external fact-checking, add <code>GEMINI_API_KEY</code> to your <code>.env</code> file or Render Environment tab.
-        </p>
-    </div>
-    {% endif %}
-
     <!-- Mandatory Privacy & AI Disclaimers -->
     <div class="alert alert-info bg-light border border-info-subtle rounded-3 mb-4 p-3" role="alert">
         <div class="d-flex gap-2">

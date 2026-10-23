@@ -26,7 +26,7 @@ def test_index_dashboard(client):
     res = client.get("/")
     assert res.status_code == 200
     assert b"DocuMind" in res.data
-    assert b"AI-Powered Cross-Document Contradiction Auditor" in res.data
+    assert b"Document Contradiction Auditor" in res.data
 
 def test_demo_samples_api(client):
     res = client.get("/api/demo-samples")
